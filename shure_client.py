@@ -12,6 +12,7 @@ class ShureConnection:
         self.connected = False
         self.sock = None
         self.buffer = ""
+        self.last_sync_time = 0
         self.thread = threading.Thread(target=self.run, daemon=True)
         self.thread.start()
 
@@ -22,6 +23,13 @@ class ShureConnection:
                 self.connect()
             
             if self.connected:
+                # Periodic sync for names and RF status (every 30 seconds)
+                if time.time() - self.last_sync_time > 30.0:
+                    self.last_sync_time = time.time()
+                    for ch in range(1, 5):
+                        self.send_command(f"< GET {ch} CHAN_NAME >")
+                        self.send_command(f"< GET {ch} RF_ANTENNA >")
+                
                 try:
                     data = self.sock.recv(1024)
                     if not data:
@@ -37,8 +45,8 @@ class ShureConnection:
                     if self.running:
                         print(f"Shure Ch {self.led_id+1}: Error {e}")
                         self.disconnect()
-            
-            time.sleep(1.0)
+            else:
+                time.sleep(1.0)
     
     def connect(self):
         try:
@@ -54,6 +62,7 @@ class ShureConnection:
                 self.send_command(f"< GET {ch} CHAN_NAME >")
                 self.send_command(f"< GET {ch} TX_TYPE >")
                 self.send_command(f"< GET {ch} TX_MUTE_STATUS >")
+                self.send_command(f"< GET {ch} RF_ANTENNA >")
         except Exception:
             # Silent retry
             pass
@@ -115,7 +124,7 @@ class ShureConnection:
                 print(f"Shure Ch {self.led_id+1}: Name -> {name}")
                 state.update_single_led(self.led_id, name=name)
         
-        elif command in ["AUDIO_TX_ON_OFF", "TX_MUTE_STATUS", "TX_TYPE", "BATT_BARS"]:
+        elif command in ["AUDIO_TX_ON_OFF", "TX_MUTE_STATUS", "TX_TYPE", "BATT_BARS", "RF_ANTENNA"]:
             status_val = None
             if command == "AUDIO_TX_ON_OFF":
                 status_val = "OK" if value == "ON" else "MUTE"
@@ -126,6 +135,8 @@ class ShureConnection:
                 status_val = "MUTE" if value == "UNKN" else "OK"
             elif command == "BATT_BARS":
                 status_val = "MUTE" if value == "255" else "OK"
+            elif command == "RF_ANTENNA":
+                status_val = "MUTE" if value == "XX" else "OK"
                 
             if status_val is not None:
                 print(f"Shure Ch {self.led_id+1}: TX [{command}] -> {status_val}")

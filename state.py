@@ -16,6 +16,9 @@ else:
 
 DEFAULT_CONFIG = {
     "show_preview": True,
+    "show_leds": True,
+    "show_names": True,
+    "layout_mode": "fixed",
     "leds": [
         {"id": i, 
          "name": f"MIC {i+1}", 

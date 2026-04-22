@@ -25,6 +25,9 @@ class LedUpdate(BaseModel):
 class ConfigUpdate(BaseModel):
     leds: List[LedUpdate]
     show_preview: Optional[bool] = None
+    show_leds: Optional[bool] = None
+    show_names: Optional[bool] = None
+    layout_mode: Optional[str] = None
 
 # API Endpoints
 @app.get("/api/config")
@@ -38,7 +41,14 @@ def update_config(update: ConfigUpdate):
     
     if update.show_preview is not None:
         state.config["show_preview"] = update.show_preview
-        state.save_config()
+    if update.show_leds is not None:
+        state.config["show_leds"] = update.show_leds
+    if update.show_names is not None:
+        state.config["show_names"] = update.show_names
+    if update.layout_mode is not None:
+        state.config["layout_mode"] = update.layout_mode
+        
+    state.save_config()
         
     return {"status": "ok", "config": state.config}
 
@@ -217,6 +227,29 @@ dashboard_html = """
                         <span class="slider"></span>
                     </label>
                 </div>
+                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    <label>Show LED Indicators</label>
+                    <label class="switch">
+                        <input type="checkbox" ${currentState.show_leds !== false ? 'checked' : ''} 
+                            onchange="currentState.show_leds = this.checked">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                    <label>Show Channel Names</label>
+                    <label class="switch">
+                        <input type="checkbox" ${currentState.show_names !== false ? 'checked' : ''} 
+                            onchange="currentState.show_names = this.checked">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Layout Mode</label>
+                    <select onchange="currentState.layout_mode = this.value" style="width: 100%; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #333; border-radius: 8px;">
+                        <option value="fixed" ${currentState.layout_mode !== 'spaced' ? 'selected' : ''}>Fixed Slots (Leave Gaps)</option>
+                        <option value="spaced" ${currentState.layout_mode === 'spaced' ? 'selected' : ''}>Space Active Channels Evenly</option>
+                    </select>
+                </div>
             `;
             container.appendChild(globalSettings);
 
@@ -305,7 +338,10 @@ dashboard_html = """
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
                         leds: currentState.leds,
-                        show_preview: currentState.show_preview 
+                        show_preview: currentState.show_preview,
+                        show_leds: currentState.show_leds,
+                        show_names: currentState.show_names,
+                        layout_mode: currentState.layout_mode
                     })
                 });
                 btn.innerText = "Saved!";

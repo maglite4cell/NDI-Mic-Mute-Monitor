@@ -97,11 +97,15 @@ class NDIWorker:
 
             # Get State
             leds = state.get_leds()
+            show_leds = state.config.get("show_leds", True)
+            show_names = state.config.get("show_names", True)
+            layout_mode = state.config.get("layout_mode", "fixed")
 
             # Draw Layout
-            # Top 1/8th = 135 pixels
             section_height = self.height // 8
-            width_per_led = self.width // 6
+            
+            enabled_leds = [led for led in leds if led.get("enabled", True)]
+            num_enabled = len(enabled_leds)
             
             current_time_ms = int(time.time() * 1000)
 
@@ -109,7 +113,14 @@ class NDIWorker:
                 if not led.get("enabled", True):
                     continue
 
-                x_center = i * width_per_led + (width_per_led // 2)
+                if layout_mode == "spaced" and num_enabled > 0:
+                    width_per_led = self.width // num_enabled
+                    idx = enabled_leds.index(led)
+                    x_center = idx * width_per_led + (width_per_led // 2)
+                else:
+                    width_per_led = self.width // 6
+                    x_center = i * width_per_led + (width_per_led // 2)
+                    
                 y_center = 50
                 radius = 30
 
@@ -132,14 +143,16 @@ class NDIWorker:
                     is_on = (current_time_ms // interval) % 2 == 0
                     color = (0, 255, 0, 255) if is_on else (255, 0, 0, 255)
                 
-                # Draw LED (Circle)
-                pygame.draw.circle(screen, color, (x_center, y_center), radius)
+                # Draw LED (Circle) if globally enabled
+                if show_leds:
+                    pygame.draw.circle(screen, color, (x_center, y_center), radius)
                 
-                # Draw Text
-                name = led.get("name", f"Mic {i+1}")
-                text_surf = font.render(name, True, (255, 255, 255, 255))
-                text_rect = text_surf.get_rect(center=(x_center, y_center + 50))
-                screen.blit(text_surf, text_rect)
+                # Draw Text if globally enabled
+                if show_names:
+                    name = led.get("name", f"Mic {i+1}")
+                    text_surf = font.render(name, True, (255, 255, 255, 255))
+                    text_rect = text_surf.get_rect(center=(x_center, y_center + 50))
+                    screen.blit(text_surf, text_rect)
 
 
             # Convert to NDI buffer
