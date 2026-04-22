@@ -37,7 +37,7 @@ def get_config():
 @app.post("/api/config")
 def update_config(update: ConfigUpdate):
     for item in update.leds:
-        state.update_led(item.id, item.dict(exclude_unset=True))
+        state.update_led(item.id, item.model_dump(exclude_unset=True))
     
     if update.show_preview is not None:
         state.config["show_preview"] = update.show_preview

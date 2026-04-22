@@ -1,0 +1,62 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build_mac:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Set up Python
+      run: uv python install 3.9
+      
+    - name: Install Dependencies
+      run: uv sync
+      
+    - name: Build macOS App
+      run: |
+        uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
+        cd dist
+        zip -r "NDI_Shure_Monitor_macOS.zip" "NDI Shure Monitor.app"
+        
+    - name: Release Note
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: dist/NDI_Shure_Monitor_macOS.zip
+        generate_release_notes: true
+
+  build_windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Set up Python
+      run: uv python install 3.9
+      
+    - name: Install Dependencies
+      run: uv sync
+      
+    - name: Build Windows Exe
+      run: |
+        uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
+        
+    - name: Zip EXE
+      run: |
+        Compress-Archive -Path "dist\NDI Shure Monitor\*" -DestinationPath "dist\NDI_Shure_Monitor_Windows.zip"
+        
+    - name: Release Note
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: dist/NDI_Shure_Monitor_Windows.zip

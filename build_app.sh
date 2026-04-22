@@ -5,9 +5,8 @@
 echo "Building NDI Shure Monitor..."
 
 # Ensure PyInstaller is installed
-if ! venv/bin/pip show pyinstaller > /dev/null 2>&1; then
-    echo "Installing PyInstaller..."
-    venv/bin/pip install pyinstaller
+if ! uv run --with pyinstaller pyinstaller --version > /dev/null 2>&1; then
+    echo "Using uv to run PyInstaller..."
 fi
 
 # Clean previous builds
@@ -16,7 +15,7 @@ rm -rf build dist
 
 # Build the application
 echo "Running PyInstaller..."
-venv/bin/pyinstaller NDI_Shure_Monitor.spec
+uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
 
 # Check if build was successful
 if [ -d "dist/NDI Shure Monitor.app" ]; then

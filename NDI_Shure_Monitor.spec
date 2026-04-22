@@ -6,16 +6,29 @@ from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
 block_cipher = None
 
-# Collect NDI library - ensure both .so and .dylib are in NDIlib subdirectory
-ndi_binaries = []
-ndi_lib_path = 'venv/lib/python3.13/site-packages/NDIlib.cpython-313-darwin.so'
-if os.path.exists(ndi_lib_path):
-    ndi_binaries.append((ndi_lib_path, 'NDIlib'))
+# Collect NDI library dynamically
+import site
+import glob
 
-# Collect libndi.dylib
-ndi_dylib = '/usr/local/lib/libndi.dylib'
-if os.path.exists(ndi_dylib):
-    ndi_binaries.append((ndi_dylib, 'NDIlib'))
+ndi_binaries = []
+site_packages = site.getsitepackages()
+
+# Try to find the NDIlib shared library in site-packages
+for sp in site_packages:
+    # Windows: .pyd or .dll, MacOS: .so or .dylib, Linux: .so
+    files = glob.glob(os.path.join(sp, 'NDIlib*')) + glob.glob(os.path.join(sp, 'ndi_python*'))
+    for f in files:
+        if os.path.isfile(f) and f.endswith(('.so', '.dylib', '.pyd', '.dll')):
+            ndi_binaries.append((f, 'NDIlib'))
+
+# Collect global libndi if exists (Mostly for macOS / Linux)
+if sys.platform == 'darwin':
+    ndi_dylib = '/usr/local/lib/libndi.dylib'
+    if os.path.exists(ndi_dylib):
+        ndi_binaries.append((ndi_dylib, 'NDIlib'))
+elif sys.platform == 'win32':
+    # Windows usually expects Processing.NDI.Lib.x64.dll in the path or bundled
+    pass
 
 # Collect numpy dynamic libraries
 numpy_libs = collect_dynamic_libs('numpy')
