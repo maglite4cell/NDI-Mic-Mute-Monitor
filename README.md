@@ -16,39 +16,80 @@ It also provides a FastAPI-driven web dashboard (`http://localhost:8001`) to con
 - **Web Dashboard:** FastAPI singleton instance allowing instant configuration adjustments via a mobile-friendly frontend.
 - **State Manager:** Thread-safe state arbiter persisting configuration layers.
 
+---
+
+## Prerequisites
+
+### 1. NDI Runtime (Required to receive the NDI output)
+The NDI Runtime must be installed on any machine that will **receive** the NDI video feed (your switcher/OBS machine). It is **free** and available from NDI's official site:
+
+> **Download:** https://ndi.video/tools/ → *NDI Tools* (includes the runtime)
+
+The runtime is required on the machine **running this app** as well to broadcast the NDI source.
+
+### 2. NDI SDK (Required only to build from source)
+If you are running from source (not using a pre-built binary), you must also install the **NDI SDK** before the `ndi-python` package can be compiled.
+
+> **Download:** https://ndi.video/tools/ndi-sdk/
+
+- **macOS:** Install the `.pkg` file. The SDK installs to `/Library/NDI SDK for Apple/`.
+- **Windows:** Run the `.exe` installer.
+
+Once the SDK is installed, install `ndi-python` via the `ndi` optional extra (see Setup below).
+
+---
+
 ## Setup and Installation
 
-### Running from source using `uv`
-This project relies on [uv](https://github.com/astral-sh/uv) by Astral for rapid dependency management. Ensure it is installed on your system.
+### Pre-built Binaries (Recommended)
+Download the latest `.app` (macOS) or `.exe` (Windows) from the [Releases](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/releases) page. No Python or NDI SDK required — just the NDI Runtime.
+
+### Running from Source using `uv`
+This project uses [uv](https://github.com/astral-sh/uv) for dependency management.
 
 ```bash
 # Clone the repository
 git clone https://github.com/maglite4cell/NDI-Mic-Mute-Monitor.git
-cd NDI-Shure-Monitor
+cd NDI-Mic-Mute-Monitor
 
-# Sync dependencies and run
+# Install core dependencies
 uv sync
+
+# Install with NDI support (requires NDI SDK installed first — see Prerequisites)
+uv sync --all-extras
+
+# Run the app
 uv run python main.py
 ```
 
+> **Note:** If the NDI SDK is not installed, the app will still start in **mock mode** — the web dashboard and Shure client work normally, but no NDI output is broadcast.
+
 ### Modifying Configuration
 Navigate to `http://localhost:8001` in your browser. From here you can configure:
-- Your Shure receiver IP addresses / ports.
+- Your Shure receiver IP addresses and ports.
 - Custom naming and toggle "Sync Receiver Name".
-- Enable/Disable specific LED slots.
+- Enable/Disable specific channel slots.
 - Choose between Fixed and Spaced visual layout modes.
 
-All configurations are persisted in `config.json`.
+All configurations are persisted in `config.json` (next to the app when running from source, or in your user app data directory when running a bundled binary).
+
+- **macOS (bundled):** `~/Library/Application Support/NDI Shure Monitor/config.json`
+- **Windows (bundled):** `%APPDATA%\NDI Shure Monitor\config.json`
+
+---
 
 ## Generating Executables
-This repository is configured to auto-build Mac `.app` and Windows `.exe` binary bundles via GitHub Actions on every newly tagged Release. You can also build it locally:
+This repository is configured to auto-build Mac `.app` and Windows `.exe` binary bundles via GitHub Actions on every newly tagged Release. You can also build locally:
 ```bash
 uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
 ```
 
+---
+
 ## Support / Limitations
-- Relies on Shure Standard Control Strings via TCP (typically port 2202). Tested with AD, ULXD, QLXD and SLXD series receivers.
+- Relies on Shure Standard Control Strings via TCP (typically port 2202). Tested with AD, ULXD, QLXD, and SLXD series receivers.
 - Python 3.9 is required due to `ndi-python` pre-built wheel limitations on macOS.
+- NDI output is broadcast as a transparent BGRA overlay suitable for compositing in vMix, OBS, or hardware NDI switchers.
 
 ## License
 Provided under the MIT License.

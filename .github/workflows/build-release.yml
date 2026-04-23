@@ -5,58 +5,84 @@ on:
     tags:
       - 'v*'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build_mac:
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
 
     - name: Set up Python
       run: uv python install 3.9
-      
+
+    - name: Install NDI SDK (macOS)
+      run: |
+        curl -fsSL "https://downloads.ndi.tv/SDK/NDI_SDK_Mac/Install_NDI_SDK_v6_Apple.pkg" -o ndi_sdk.pkg || true
+        if [ -f ndi_sdk.pkg ]; then
+          sudo installer -pkg ndi_sdk.pkg -target /
+        else
+          echo "NDI SDK download failed – building without NDI (mock mode)"
+        fi
+
     - name: Install Dependencies
-      run: uv sync
-      
+      run: uv sync --all-extras
+
     - name: Build macOS App
       run: |
         uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
         cd dist
         zip -r "NDI_Shure_Monitor_macOS.zip" "NDI Shure Monitor.app"
-        
-    - name: Release Note
+
+    - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: dist/NDI_Shure_Monitor_macOS.zip
         generate_release_notes: true
 
   build_windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Install uv
       uses: astral-sh/setup-uv@v5
 
     - name: Set up Python
       run: uv python install 3.9
-      
+
+    - name: Install NDI SDK (Windows)
+      shell: pwsh
+      run: |
+        $url = "https://downloads.ndi.tv/SDK/NDI_SDK/NDI_SDK_v6_Windows.exe"
+        $out = "ndi_sdk.exe"
+        try {
+          Invoke-WebRequest -Uri $url -OutFile $out -ErrorAction Stop
+          Start-Process -FilePath $out -ArgumentList "/SILENT" -Wait
+        } catch {
+          Write-Host "NDI SDK download failed – building without NDI (mock mode)"
+        }
+
     - name: Install Dependencies
-      run: uv sync
-      
+      run: uv sync --all-extras
+
     - name: Build Windows Exe
       run: |
         uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
-        
+
     - name: Zip EXE
       run: |
         Compress-Archive -Path "dist\NDI Shure Monitor\*" -DestinationPath "dist\NDI_Shure_Monitor_Windows.zip"
-        
-    - name: Release Note
+
+    - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: dist/NDI_Shure_Monitor_Windows.zip

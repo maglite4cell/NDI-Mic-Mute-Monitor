@@ -39,14 +39,15 @@ def update_config(update: ConfigUpdate):
     for item in update.leds:
         state.update_led(item.id, item.model_dump(exclude_unset=True))
     
-    if update.show_preview is not None:
-        state.config["show_preview"] = update.show_preview
-    if update.show_leds is not None:
-        state.config["show_leds"] = update.show_leds
-    if update.show_names is not None:
-        state.config["show_names"] = update.show_names
-    if update.layout_mode is not None:
-        state.config["layout_mode"] = update.layout_mode
+    with state._lock:
+        if update.show_preview is not None:
+            state.config["show_preview"] = update.show_preview
+        if update.show_leds is not None:
+            state.config["show_leds"] = update.show_leds
+        if update.show_names is not None:
+            state.config["show_names"] = update.show_names
+        if update.layout_mode is not None:
+            state.config["layout_mode"] = update.layout_mode
         
     state.save_config()
         
@@ -82,7 +83,7 @@ dashboard_html = """
         h1 { text-align: center; font-weight: 300; margin-bottom: 20px; }
         
         .container {
-            max_width: 800px;
+            max-width: 800px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

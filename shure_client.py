@@ -63,9 +63,8 @@ class ShureConnection:
                 self.send_command(f"< GET {ch} TX_TYPE >")
                 self.send_command(f"< GET {ch} TX_MUTE_STATUS >")
                 self.send_command(f"< GET {ch} RF_ANTENNA >")
-        except Exception:
-            # Silent retry
-            pass
+        except Exception as e:
+            print(f"Shure Ch {self.led_id+1}: Connection to {self.ip}:{self.port} failed: {e}")
 
     def send_command(self, cmd):
         if self.sock and self.connected:
@@ -100,8 +99,6 @@ class ShureConnection:
 
     def parse_message(self, msg):
         # Format: REP x COMMAND VALUE
-        print(f"DEBUG RECV (Ch {self.led_id+1}): {msg}")
-        
         parts = msg.split()
         if len(parts) < 4 or parts[0] != "REP":
             return

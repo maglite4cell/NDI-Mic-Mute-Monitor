@@ -1,0 +1,68 @@
+{
+    "show_preview": true,
+    "show_leds": true,
+    "show_names": true,
+    "layout_mode": "fixed",
+    "leds": [
+        {
+            "id": 0,
+            "name": "MIC 1",
+            "enabled": true,
+            "interval": 500,
+            "shure_ip": "127.0.0.1",
+            "shure_port": 2202,
+            "use_receiver_name": true,
+            "use_live_status": true
+        },
+        {
+            "id": 1,
+            "name": "MIC 2",
+            "enabled": true,
+            "interval": 500,
+            "shure_ip": "127.0.0.1",
+            "shure_port": 2202,
+            "use_receiver_name": true,
+            "use_live_status": true
+        },
+        {
+            "id": 2,
+            "name": "MIC 3",
+            "enabled": true,
+            "interval": 500,
+            "shure_ip": "127.0.0.1",
+            "shure_port": 2202,
+            "use_receiver_name": true,
+            "use_live_status": true
+        },
+        {
+            "id": 3,
+            "name": "MIC 4",
+            "enabled": true,
+            "interval": 500,
+            "shure_ip": "127.0.0.1",
+            "shure_port": 2202,
+            "use_receiver_name": true,
+            "use_live_status": true
+        },
+        {
+            "id": 4,
+            "name": "MIC 5",
+            "enabled": true,
+            "interval": 500,
+            "shure_ip": "127.0.0.1",
+            "shure_port": 2202,
+            "use_receiver_name": true,
+            "use_live_status": true
+        },
+        {
+            "id": 5,
+            "name": "MIC 6",
+            "enabled": true,
+            "interval": 500,
+            "shure_ip": "127.0.0.1",
+            "shure_port": 2202,
+            "use_receiver_name": true,
+            "use_live_status": true
+        }
+    ]
+}

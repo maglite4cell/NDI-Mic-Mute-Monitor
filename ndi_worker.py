@@ -62,7 +62,7 @@ class NDIWorker:
                     video_frame = ndi.VideoFrameV2()
                     video_frame.xres = self.width
                     video_frame.yres = self.height
-                    video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_RGBA
+                    video_frame.FourCC = ndi.FOURCC_VIDEO_TYPE_BGRA  # BGRA is NDI's native format
                     video_frame.frame_rate_N = 30000
                     video_frame.frame_rate_D = 1001
                     video_frame.line_stride_in_bytes = self.width * 4
@@ -158,31 +158,29 @@ class NDIWorker:
             # Convert to NDI buffer
             if NDI_AVAILABLE and ndi_send:
                 try:
-                    data_bytes = pygame.image.tobytes(screen, 'RGBA')
-                    # Must convert to numpy and reshape for NDI wrapper to read dims correctly
+                    # Use BGRA format — matches FOURCC_VIDEO_TYPE_BGRA declared above
+                    data_bytes = pygame.image.tobytes(screen, 'BGRA')
                     frame_data = np.frombuffer(data_bytes, dtype=np.uint8)
                     frame_data = frame_data.reshape((self.height, self.width, 4))
                     video_frame.data = frame_data
                     
-                    # Suppress library noise and use Sync send 
                     with SuppressStdout():
                          ndi.send_send_video_v2(ndi_send, video_frame)
                         
                 except Exception as e:
                     sys.stderr.write(f"NDI Send Error: {e}\n")
-                    pass
             
             # --- Local Preview ---
             # Check if we should show preview
             show_preview = state.config.get("show_preview", True)
             
             if show_preview and not preview_visible:
-                # Show the window
-                pygame.display.set_mode((self.width, self.height))
+                # Show the window — re-assign so blit targets the active display surface
+                display_window = pygame.display.set_mode((self.width, self.height))
                 preview_visible = True
             elif not show_preview and preview_visible:
-                # Hide the window
-                pygame.display.set_mode((self.width, self.height), pygame.HIDDEN)
+                # Hide the window — re-assign to keep reference valid
+                display_window = pygame.display.set_mode((self.width, self.height), pygame.HIDDEN)
                 preview_visible = False
             
             if show_preview:
