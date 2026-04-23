@@ -37,6 +37,13 @@ jobs:
     - name: Build macOS App
       run: |
         uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
+
+    - name: Ad-hoc Code Sign (bypass Gatekeeper "damaged" error)
+      run: |
+        codesign --deep --force --sign - "dist/NDI Shure Monitor.app"
+
+    - name: Package macOS App
+      run: |
         cd dist
         zip -r "NDI_Shure_Monitor_macOS.zip" "NDI Shure Monitor.app"
 
@@ -50,6 +57,15 @@ jobs:
 
           ### macOS
           ✅ Full NDI video output, Shure receiver monitoring, and web dashboard.
+
+          > **First launch:** macOS will show an "unidentified developer" warning because this build is not notarized with an Apple Developer certificate. To open it:
+          > 1. Right-click (or Control-click) `NDI Shure Monitor.app` and select **Open**
+          > 2. Click **Open** in the dialog that appears
+          >
+          > You only need to do this once. Alternatively, run in Terminal:
+          > ```
+          > xattr -cr "/Applications/NDI Shure Monitor.app"
+          > ```
 
           ### Windows
           ⚠️ **NDI output is not yet available on Windows.** The Windows build is fully functional for Shure receiver monitoring and the web dashboard (http://localhost:8001), but will not broadcast an NDI video feed. A cross-platform NDI fix using a native ctypes wrapper is in progress and will be included in a future release.

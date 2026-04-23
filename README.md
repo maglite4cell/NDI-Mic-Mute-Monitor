@@ -44,6 +44,16 @@ Once the SDK is installed, install `ndi-python` via the `ndi` optional extra (se
 ### Pre-built Binaries (Recommended)
 Download the latest `.app` (macOS) or `.exe` (Windows) from the [Releases](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/releases) page. No Python or NDI SDK required — just the NDI Runtime.
 
+> [!IMPORTANT]
+> **macOS first launch — Gatekeeper warning:** Because this app is not notarized with an Apple Developer certificate, macOS will warn that it's from an "unidentified developer." To open it:
+> 1. **Right-click** (or Control-click) `NDI Shure Monitor.app` → **Open**
+> 2. Click **Open** in the security dialog
+>
+> You only need to do this once. If you see **"app is damaged"** instead, run this in Terminal first:
+> ```bash
+> xattr -cr "/Applications/NDI Shure Monitor.app"
+> ```
+
 ### Running from Source using `uv`
 This project uses [uv](https://github.com/astral-sh/uv) for dependency management.
 
