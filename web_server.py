@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional
 import uvicorn
 import threading
 from state import state
@@ -17,27 +17,17 @@ class LedUpdate(BaseModel):
     name: Optional[str] = None
     enabled: Optional[bool] = None
     interval: Optional[int] = None
-    monitor_type: Optional[str] = None
-    target: Optional[str] = None
+    shure_ip: Optional[str] = None
+    shure_port: Optional[int] = None
     use_receiver_name: Optional[bool] = None
     use_live_status: Optional[bool] = None
 
-class ConnectionConfig(BaseModel):
-    ip: str
-    port: int
-
 class ConfigUpdate(BaseModel):
     leds: List[LedUpdate]
-    connections: Optional[Dict[str, ConnectionConfig]] = None
     show_preview: Optional[bool] = None
     show_leds: Optional[bool] = None
     show_names: Optional[bool] = None
-    show_battery: Optional[bool] = None
     layout_mode: Optional[str] = None
-
-class ChannelStatusUpdate(BaseModel):
-    status: Optional[str] = None
-    battery: Optional[int] = None
 
 # API Endpoints
 @app.get("/api/config")
@@ -50,21 +40,12 @@ def update_config(update: ConfigUpdate):
         state.update_led(item.id, item.model_dump(exclude_unset=True))
     
     with state._lock:
-        if update.connections is not None:
-            if "connections" not in state.config:
-                state.config["connections"] = {}
-            for k, v in update.connections.items():
-                if k in state.config["connections"]:
-                    state.config["connections"][k]["ip"] = v.ip
-                    state.config["connections"][k]["port"] = v.port
         if update.show_preview is not None:
             state.config["show_preview"] = update.show_preview
         if update.show_leds is not None:
             state.config["show_leds"] = update.show_leds
         if update.show_names is not None:
             state.config["show_names"] = update.show_names
-        if update.show_battery is not None:
-            state.config["show_battery"] = update.show_battery
         if update.layout_mode is not None:
             state.config["layout_mode"] = update.layout_mode
         
@@ -72,18 +53,7 @@ def update_config(update: ConfigUpdate):
         
     return {"status": "ok", "config": state.config}
 
-@app.post("/api/channel/{id}/status")
-def update_channel_status(id: int, update: ChannelStatusUpdate):
-    updates = {}
-    if update.status is not None:
-        updates['status'] = update.status
-    if update.battery is not None:
-        updates['battery'] = update.battery
-        
-    if updates:
-        state.update_single_led(id, **updates)
-        
-    return {"status": "ok"}
+
 
 # HTML Dashboard
 dashboard_html = """
@@ -157,7 +127,6 @@ dashboard_html = """
             border-radius: 8px;
             font-size: 16px;
             width: 100px;
-            box-sizing: border-box;
         }
 
         .controls {
@@ -229,7 +198,7 @@ dashboard_html = """
     <button class="btn-save" onclick="saveConfig()">Save All Changes</button>
 
     <script>
-        let currentState = { leds: [], connections: {} };
+        let currentState = { leds: [] };
 
         // Escape HTML special characters to prevent XSS from receiver-supplied strings
         function escHtml(str) {
@@ -246,105 +215,21 @@ dashboard_html = """
             const res = await fetch('/api/config');
             const data = await res.json();
             currentState = data;
-            if (!currentState.connections) currentState.connections = {};
             render();
         }
 
-        function updateConnection(type, key, value) {
-            if (!currentState.connections[type]) currentState.connections[type] = {};
-            currentState.connections[type][key] = value;
-        }
-
-        function getTargetSelector(led) {
-            const type = led.monitor_type;
-            const current = led.target || '';
-            
-            if (type === 'api') {
-                return `<div style="margin-top: 10px;">
-                    <label style="color: #aaa; font-size: 0.8em;">Endpoint</label>
-                    <code style="background: #000; padding: 8px; border-radius: 4px; display: block; margin-top: 5px; color: var(--success);">POST /api/channel/${led.id}/status</code>
-                </div>`;
-            }
-            
-            if (type === 'shure') {
-                return `<div style="margin-top: 10px;">
-                    <label>Receiver Channel</label>
-                    <input type="text" value="${escHtml(current)}" oninput="updateState(${led.id}, 'target', this.value)" placeholder="1, 2, 3...">
-                </div>`;
-            }
-            
-            if (type === 'x32' || type === 'wing') {
-                let options = [];
-                if (type === 'x32') {
-                    for(let i=1; i<=32; i++) options.push({val: `/ch/${i.toString().padStart(2,'0')}/mix/on`, label: `Channel ${i}`});
-                    for(let i=1; i<=8; i++) options.push({val: `/auxin/${i.toString().padStart(2,'0')}/mix/on`, label: `Aux In ${i}`});
-                    for(let i=1; i<=8; i++) options.push({val: `/fxrtn/${i.toString().padStart(2,'0')}/mix/on`, label: `FX Return ${i}`});
-                    for(let i=1; i<=16; i++) options.push({val: `/bus/${i.toString().padStart(2,'0')}/mix/on`, label: `MixBus ${i}`});
-                    for(let i=1; i<=6; i++) options.push({val: `/mtx/${i.toString().padStart(2,'0')}/mix/on`, label: `Matrix ${i}`});
-                    options.push({val: '/main/st/mix/on', label: 'Main LR'});
-                    options.push({val: '/main/m/mix/on', label: 'Main M/C'});
-                } else {
-                    // WING
-                    for(let i=1; i<=40; i++) options.push({val: `/ch/${i}/mute`, label: `Channel ${i}`});
-                    for(let i=1; i<=8; i++) options.push({val: `/aux/${i}/mute`, label: `Aux In ${i}`});
-                    for(let i=1; i<=16; i++) options.push({val: `/bus/${i}/mute`, label: `Bus ${i}`});
-                    for(let i=1; i<=4; i++) options.push({val: `/main/${i}/mute`, label: `Main ${i}`});
-                    for(let i=1; i<=8; i++) options.push({val: `/mtx/${i}/mute`, label: `Matrix ${i}`});
-                }
-                
-                const optsHtml = options.map(o => `<option value="${o.val}" ${current === o.val ? 'selected' : ''}>${o.label}</option>`).join('');
-                return `<div style="margin-top: 10px;">
-                    <label>Monitor Target</label>
-                    <select onchange="updateState(${led.id}, 'target', this.value)" style="width: 100%; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #333; border-radius: 8px; margin-top: 5px;">
-                        <option value="">-- Select Target --</option>
-                        ${optsHtml}
-                    </select>
-                </div>`;
-            }
-            
-            // Sennheiser / Presonus fallback
-            return `<div style="margin-top: 10px;">
-                <label>Target Identifier</label>
-                <input type="text" value="${escHtml(current)}" oninput="updateState(${led.id}, 'target', this.value)" placeholder="ID or Path">
-            </div>`;
-        }
 
         function render() {
             const container = document.getElementById('app');
             container.innerHTML = '';
             
-            const currentHost = window.location.host;
-            
             // Global Settings
             const globalSettings = document.createElement('div');
             globalSettings.className = 'led-card';
-            
-            const connTypes = ['shure', 'x32', 'wing', 'sennheiser', 'presonus'];
-            const connectionsHtml = connTypes.map(type => `
-                <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
-                    <label style="width: 80px; text-transform: capitalize;">${type}</label>
-                    <input type="text" value="${currentState.connections[type]?.ip || ''}" 
-                        oninput="updateConnection('${type}', 'ip', this.value)" placeholder="IP Address" style="flex: 2; padding: 8px;">
-                    <input type="number" value="${currentState.connections[type]?.port || 0}" 
-                        oninput="updateConnection('${type}', 'port', parseInt(this.value))" placeholder="Port" style="flex: 1; padding: 8px; width: 60px;">
-                </div>
-            `).join('');
-
             globalSettings.innerHTML = `
                 <div class="led-header">
                     <span style="font-weight: bold; font-size: 1.1em;">Global Settings</span>
                 </div>
-                
-                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                    <label style="color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; display: block; margin-bottom: 10px;">Monitor Connections</label>
-                    ${connectionsHtml}
-                    
-                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;">
-                        <label style="color: #aaa; font-size: 0.8em; display: block;">Webhook API Base URL (For external control)</label>
-                        <code style="background: #000; padding: 5px; border-radius: 4px; display: block; margin-top: 5px; color: var(--success); font-size: 0.9em; word-break: break-all;">http://${currentHost}/api/channel</code>
-                    </div>
-                </div>
-
                 <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
                     <label>Show Local Preview Window</label>
                     <label class="switch">
@@ -366,14 +251,6 @@ dashboard_html = """
                     <label class="switch">
                         <input type="checkbox" ${currentState.show_names !== false ? 'checked' : ''} 
                             onchange="currentState.show_names = this.checked">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <label>Show Battery Level</label>
-                    <label class="switch">
-                        <input type="checkbox" ${currentState.show_battery !== false ? 'checked' : ''} 
-                            onchange="currentState.show_battery = this.checked">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -418,22 +295,19 @@ dashboard_html = """
                     </div>
 
                     <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                        <label style="color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; display: block; margin-bottom: 5px;">Monitor Configuration</label>
-                        
-                        <div style="margin-bottom: 10px;">
-                            <label style="display: block; margin-bottom: 5px;">Monitor Type</label>
-                            <select onchange="updateState(${led.id}, 'monitor_type', this.value); render();" 
-                                style="width: 100%; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #333; border-radius: 8px;">
-                                <option value="shure" ${led.monitor_type === 'shure' ? 'selected' : ''}>Shure</option>
-                                <option value="sennheiser" ${led.monitor_type === 'sennheiser' ? 'selected' : ''}>Sennheiser</option>
-                                <option value="x32" ${led.monitor_type === 'x32' ? 'selected' : ''}>X32 / M32</option>
-                                <option value="wing" ${led.monitor_type === 'wing' ? 'selected' : ''}>WING</option>
-                                <option value="presonus" ${led.monitor_type === 'presonus' ? 'selected' : ''}>Presonus Studio Live</option>
-                                <option value="api" ${led.monitor_type === 'api' ? 'selected' : ''}>API Endpoint</option>
-                            </select>
+                        <label style="color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; display: block; margin-bottom: 5px;">Receiver Connection</label>
+                        <div class="controls">
+                            <div style="flex: 3;">
+                                <label>IP Address</label>
+                                <input type="text" value="${escHtml(led.shure_ip || '127.0.0.1')}" 
+                                    oninput="updateState(${led.id}, 'shure_ip', this.value)">
+                            </div>
+                            <div style="flex: 1;">
+                                <label>Port</label>
+                                <input type="number" value="${led.shure_port || 2202}" 
+                                    oninput="updateState(${led.id}, 'shure_port', parseInt(this.value))">
+                            </div>
                         </div>
-
-                        ${getTargetSelector(led)}
                     </div>
 
                     <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
@@ -475,11 +349,9 @@ dashboard_html = """
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({ 
                         leds: currentState.leds,
-                        connections: currentState.connections,
                         show_preview: currentState.show_preview,
                         show_leds: currentState.show_leds,
                         show_names: currentState.show_names,
-                        show_battery: currentState.show_battery,
                         layout_mode: currentState.layout_mode
                     })
                 });

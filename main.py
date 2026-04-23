@@ -11,11 +11,11 @@ def main():
     web_thread = threading.Thread(target=run_server, daemon=True)
     web_thread.start()
 
-    # Start Monitor Clients in a Daemon Thread
-    from monitor_manager import run_monitor_clients
-    print("Starting Monitor Clients...")
-    monitor_thread = threading.Thread(target=run_monitor_clients, daemon=True)
-    monitor_thread.start()
+    # Start Shure Client in a Daemon Thread
+    from shure_client import run_shure_client
+    print("Starting Shure Client...")
+    shure_thread = threading.Thread(target=run_shure_client, daemon=True)
+    shure_thread.start()
 
     # Start NDI Worker on Main Thread (Required for PyGame/SDL on macOS)
     ndi_worker = NDIWorker()

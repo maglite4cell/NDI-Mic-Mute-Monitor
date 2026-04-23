@@ -99,7 +99,6 @@ class NDIWorker:
             leds = state.get_leds()
             show_leds = state.config.get("show_leds", True)
             show_names = state.config.get("show_names", True)
-            show_battery = state.config.get("show_battery", True)
             layout_mode = state.config.get("layout_mode", "fixed")
 
             # Draw Layout
@@ -151,11 +150,6 @@ class NDIWorker:
                 # Draw Text if globally enabled
                 if show_names:
                     name = led.get("name", f"Mic {i+1}")
-                    if show_battery:
-                        battery = led.get("battery")
-                        if battery is not None:
-                            name = f"{name} - {battery}%"
-                            
                     text_surf = font.render(name, True, (255, 255, 255, 255))
                     text_rect = text_surf.get_rect(center=(x_center, y_center + 50))
                     screen.blit(text_surf, text_rect)

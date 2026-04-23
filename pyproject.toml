@@ -1,6 +1,6 @@
 [project]
 name = "ndi-shure-monitor"
-version = "0.2.0"
+version = "0.1.2"
 description = "Monitors Shure wireless receivers and broadcasts mute status as an NDI video feed"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -10,7 +10,6 @@ dependencies = [
     "numpy>=2.0.2",
     "pygame>=2.6.1",
     "pytest>=8.4.2",
-    "python-osc>=1.8.3",
     "uvicorn>=0.39.0",
 ]
 
@@ -19,11 +18,4 @@ dependencies = [
 # ndi-python only has a macOS wheel on PyPI; Windows builds run in mock mode
 ndi = [
     "ndi-python>=5.1.1.5 ; sys_platform == 'darwin'",
-]
-
-[dependency-groups]
-dev = [
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.7.6",
-    "pytest-cov>=7.1.0",
 ]
