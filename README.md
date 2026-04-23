@@ -3,7 +3,19 @@
 [![CI](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/actions/workflows/ci.yml)
 [![Build & Release](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/actions/workflows/build-release.yml/badge.svg)](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/actions/workflows/build-release.yml)
 
+> [!WARNING]  
+> **Work In Progress**  
+> This project is currently in active development. Features, APIs, and configuration structures are subject to change without notice. Please test thoroughly before deploying in mission-critical live environments.
+
 A standalone service and visual dashboard that monitors Shure wireless microphones and broadcasts their statuses as an NDI video feed.
+
+---
+
+💖 **Support this project!**  
+If this tool has saved your Sunday service, corporate broadcast, or live gig, consider sponsoring the development to help cover hardware testing gear and Apple Developer licenses!  
+**[Sponsor @maglite4cell on GitHub Sponsors](https://github.com/sponsors/maglite4cell)**
+
+---
 
 ## Overview
 This application connects directly to your Shure wireless microphone receivers to retrieve their statuses in real-time (Link OK, Muted, Channel Name). It renders this information visually using PyGame and broadcasts it across your local network via NDI, allowing modern video switchers (like OBS, vMix, or hardware switchers) to directly ingest and overlay the feed.
@@ -45,10 +57,24 @@ Once the SDK is installed, install `ndi-python` via the `ndi` optional extra (se
 Download the latest `.app` (macOS) or `.exe` (Windows) from the [Releases](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/releases) page. No Python or NDI SDK required — just the NDI Runtime.
 
 > [!IMPORTANT]
-> **macOS first launch — Gatekeeper warning:** Because this app is not notarized with an Apple Developer certificate, macOS may show an **"app is damaged"** message when first opened. Run this command in Terminal before launching:
+> **macOS first launch — Gatekeeper warning:** Because this app is not notarized with an Apple Developer certificate, macOS may show an **"app is damaged"** message when first opened. Run this command in Terminal before launching, replacing the path with wherever you saved the app:
+> 
+> **If it's in your Applications folder:**
 > ```bash
 > xattr -cr "/Applications/NDI Shure Monitor.app"
 > ```
+> 
+> **If it's in your Downloads folder:**
+> ```bash
+> xattr -cr "~/Downloads/NDI Shure Monitor.app"
+> ```
+> 
+> **If it's saved somewhere else:**
+> ```bash
+> xattr -cr "/path/to/where/you/saved/NDI Shure Monitor.app"
+> ```
+> *(Tip: You can type `xattr -cr ` with a space at the end, and then drag and drop the app from Finder directly into the Terminal window to automatically insert the correct path).*
+>
 > Then open the app normally. You only need to do this once.
 >
 > If you see **"unidentified developer"** instead, right-click the app → **Open** → click **Open** in the dialog.
