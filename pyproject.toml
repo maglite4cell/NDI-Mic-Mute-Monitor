@@ -15,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Install with: uv sync --all-extras (requires NDI SDK to be installed first)
+# ndi-python only has a macOS wheel on PyPI; Windows builds run in mock mode
 ndi = [
-    "ndi-python>=5.1.1.5",
+    "ndi-python>=5.1.1.5 ; sys_platform == 'darwin'",
 ]
