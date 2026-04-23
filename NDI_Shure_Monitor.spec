@@ -60,6 +60,7 @@ a = Analysis(
     hiddenimports=[
         'pygame',
         'numpy',
+        'numpy.core.multiarray',
         'numpy._core',
         'numpy._core._multiarray_umath',
         'numpy.core._multiarray_umath',
