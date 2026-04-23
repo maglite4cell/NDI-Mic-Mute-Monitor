@@ -13,22 +13,37 @@ import glob
 ndi_binaries = []
 site_packages = site.getsitepackages()
 
-# Try to find the NDIlib shared library in site-packages
+# ndi-python wheels bundle libndi.dylib INSIDE the NDIlib package subdirectory.
+# We must look inside NDIlib/ rather than just at the top level of site-packages,
+# because glob('NDIlib*') finds the directory, not the files within it.
 for sp in site_packages:
-    # Windows: .pyd or .dll, MacOS: .so or .dylib, Linux: .so
-    files = glob.glob(os.path.join(sp, 'NDIlib*')) + glob.glob(os.path.join(sp, 'ndi_python*'))
-    for f in files:
-        if os.path.isfile(f) and f.endswith(('.so', '.dylib', '.pyd', '.dll')):
-            ndi_binaries.append((f, 'NDIlib'))
+    ndi_pkg_dir = os.path.join(sp, 'NDIlib')
+    if os.path.isdir(ndi_pkg_dir):
+        for ext in ('*.so', '*.dylib', '*.pyd', '*.dll'):
+            for f in glob.glob(os.path.join(ndi_pkg_dir, ext)):
+                if os.path.isfile(f):
+                    ndi_binaries.append((f, 'NDIlib'))
+    # Also check top-level site-packages for any direct NDIlib/ndi_python files
+    for pattern in ('NDIlib*.so', 'NDIlib*.dylib', 'ndi_python*.so', 'ndi_python*.pyd'):
+        for f in glob.glob(os.path.join(sp, pattern)):
+            if os.path.isfile(f):
+                ndi_binaries.append((f, 'NDIlib'))
 
-# Collect global libndi if exists (Mostly for macOS / Linux)
+# Fallback: system-level libndi installed by the NDI SDK (macOS/Linux)
 if sys.platform == 'darwin':
     ndi_dylib = '/usr/local/lib/libndi.dylib'
     if os.path.exists(ndi_dylib):
         ndi_binaries.append((ndi_dylib, 'NDIlib'))
 elif sys.platform == 'win32':
-    # Windows usually expects Processing.NDI.Lib.x64.dll in the path or bundled
-    pass
+    for candidate in [
+        r'C:\Program Files\NDI\NDI 6 Runtime\Processing.NDI.Lib.x64.dll',
+        r'C:\Program Files\NDI\NDI 5 Runtime\Processing.NDI.Lib.x64.dll',
+    ]:
+        if os.path.exists(candidate):
+            ndi_binaries.append((candidate, '.'))
+            break
+
+print(f"[spec] NDI binaries found: {ndi_binaries}")
 
 # Collect numpy dynamic libraries
 numpy_libs = collect_dynamic_libs('numpy')
