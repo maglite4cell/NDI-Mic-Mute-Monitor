@@ -200,6 +200,16 @@ dashboard_html = """
     <script>
         let currentState = { leds: [] };
 
+        // Escape HTML special characters to prevent XSS from receiver-supplied strings
+        function escHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         async function fetchConfig() {
             // Fetch LED Config
             const res = await fetch('/api/config');
@@ -271,7 +281,7 @@ dashboard_html = """
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                          <div style="flex: 2;">
                             <label>Display Name</label>
-                            <input type="text" value="${led.name}" 
+                            <input type="text" value="${escHtml(led.name)}" 
                                 oninput="updateState(${led.id}, 'name', this.value)">
                          </div>
                          <div style="flex: 1; min-width: 80px;">
@@ -289,7 +299,7 @@ dashboard_html = """
                         <div class="controls">
                             <div style="flex: 3;">
                                 <label>IP Address</label>
-                                <input type="text" value="${led.shure_ip || '127.0.0.1'}" 
+                                <input type="text" value="${escHtml(led.shure_ip || '127.0.0.1')}" 
                                     oninput="updateState(${led.id}, 'shure_ip', this.value)">
                             </div>
                             <div style="flex: 1;">

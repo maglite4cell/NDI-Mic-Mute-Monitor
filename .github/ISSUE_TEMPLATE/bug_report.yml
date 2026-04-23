@@ -1,0 +1,93 @@
+name: Bug Report
+description: Something isn't working correctly
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the sections below to help us investigate.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: What operating system are you running the app on?
+      options:
+        - macOS (pre-built .app)
+        - Windows (pre-built .exe)
+        - macOS (running from source)
+        - Windows (running from source)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected Component
+      description: Which part of the app is the issue in?
+      options:
+        - NDI Output (blank, wrong colors, not appearing in receiver)
+        - Shure Connection (not connecting, wrong status)
+        - Web Dashboard (config not saving, UI issue)
+        - Local Preview Window
+        - Build / Installation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of what the bug is.
+      placeholder: "When I do X, Y happens instead of Z."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to trigger the bug.
+      placeholder: |
+        1. Open the web dashboard at http://localhost:8001
+        2. Set the IP address to ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: input
+    id: shure-model
+    attributes:
+      label: Shure Receiver Model (if applicable)
+      description: e.g. ULXD4, SLXD4, AD4D, QLXD4
+      placeholder: "ULXD4"
+
+  - type: input
+    id: ndi-receiver
+    attributes:
+      label: NDI Receiver / Software (if applicable)
+      description: e.g. OBS 30.x, vMix 26, Tricaster
+      placeholder: "OBS 30.2"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Output / Logs
+      description: Paste any relevant terminal output. Running from source shows the most detail.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Screenshots, network topology details, or anything else that might help.

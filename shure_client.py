@@ -84,6 +84,11 @@ class ShureConnection:
 
     def process_data(self, raw_data):
         self.buffer += raw_data
+        # Guard against unbounded buffer growth from a misbehaving receiver
+        if len(self.buffer) > 8192:
+            print(f"Shure Ch {self.led_id+1}: Buffer overflow, clearing ({len(self.buffer)} bytes)")
+            self.buffer = ""
+            return
         while '>' in self.buffer:
             if '<' in self.buffer:
                 start = self.buffer.find('<')
