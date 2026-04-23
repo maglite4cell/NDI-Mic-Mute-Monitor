@@ -86,10 +86,60 @@ uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
 
 ---
 
-## Support / Limitations
-- Relies on Shure Standard Control Strings via TCP (typically port 2202). Tested with AD, ULXD, QLXD, and SLXD series receivers.
+## Compatibility
+
+This application communicates with Shure receivers using the **Shure Standard Control Strings** protocol — an ASCII-based TCP command set (port 2202) supported across Shure's networked wireless product lines and documented at [pubs.shure.com](https://pubs.shure.com).
+
+### ✅ Tested Hardware
+| Hardware | Role | Notes |
+|---|---|---|
+| QLXD4 | Receiver | Confirmed working |
+| QLXD2 | Handheld transmitter | Confirmed working |
+
+### 📡 Expected Compatible Receivers
+All of the following series use the same TCP port 2202 / ASCII command protocol and are expected to be compatible:
+
+| Series | Receiver Models | Notes |
+|---|---|---|
+| **QLX-D** | QLXD4, QLXD4D | ✅ Plug-and-play |
+| **ULX-D** | ULXD4, ULXD4D, ULXD4Q | ✅ Plug-and-play |
+| **SLX-D** | SLXD4, SLXD4D | ⚠️ See note below — third-party control is **blocked by default** |
+| **Axient Digital** | AD4D, ADX4, ADX4D | ✅ Plug-and-play |
+
+> [!IMPORTANT]
+> **SLX-D users:** Third-party TCP control is **disabled by default** on SLX-D receivers. You must enable it manually:
+> On the receiver front panel → **Advanced Settings** → **Controller Access** → change from **Block** to **Allow**.
+
+### 🎤 Expected Compatible Transmitters
+The app monitors status reported by the receiver for any paired transmitter. All standard handhelds, bodypacks, and instrument transmitters across the above series should work:
+
+| Series | Handheld | Bodypack | Instrument |
+|---|---|---|---|
+| QLX-D | QLXD2 | QLXD1 | QLXD3 |
+| ULX-D | ULXD2 | ULXD1 | ULXD3 |
+| SLX-D | SLXD2 | SLXD1 | SLXD3 |
+| Axient Digital | ADX2, ADX2FD | ADX1, ADX1M | ADX3 |
+
+### ❌ Not Compatible
+The following Shure series do **not** have Ethernet ports and do not support TCP control:
+- BLX / BLX-D (budget series, no network port)
+- PGX / PGXD (entry-level, no network port)
+- SLX (original, pre-SLX-D, no network port)
+- PGA / PG Alta series (consumer, no network port)
+
+### 📖 Official Protocol Documentation
+- [Shure Command Strings Documentation Hub](https://pubs.shure.com/command-strings)
+- [QLXD Command Strings](https://pubs.shure.com/command-strings/QLXD/)
+- [ULXD Command Strings](https://pubs.shure.com/command-strings/ULXD/)
+- [SLXD Command Strings](https://pubs.shure.com/command-strings/SLXD/)
+- [Axient Digital Command Strings](https://pubs.shure.com/command-strings/AD/)
+
+---
+
+## Technical Notes
 - Python 3.9 is required due to `ndi-python` pre-built wheel limitations on macOS.
 - NDI output is broadcast as a transparent BGRA overlay suitable for compositing in vMix, OBS, or hardware NDI switchers.
+- Receivers send status updates automatically when values change — the app uses a 30-second periodic sync as a safety net rather than constant polling, in line with Shure's recommended integration approach.
 
 ## License
 This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
