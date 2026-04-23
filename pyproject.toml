@@ -1,6 +1,6 @@
 [project]
 name = "ndi-shure-monitor"
-version = "0.1.0"
+version = "0.1.2"
 description = "Monitors Shure wireless receivers and broadcasts mute status as an NDI video feed"
 readme = "README.md"
 requires-python = ">=3.9"

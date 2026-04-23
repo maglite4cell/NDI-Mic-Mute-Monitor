@@ -45,6 +45,17 @@ jobs:
       with:
         files: dist/NDI_Shure_Monitor_macOS.zip
         generate_release_notes: true
+        body: |
+          ## NDI Shure Monitor
+
+          ### macOS
+          ✅ Full NDI video output, Shure receiver monitoring, and web dashboard.
+
+          ### Windows
+          ⚠️ **NDI output is not yet available on Windows.** The Windows build is fully functional for Shure receiver monitoring and the web dashboard (http://localhost:8001), but will not broadcast an NDI video feed. A cross-platform NDI fix using a native ctypes wrapper is in progress and will be included in a future release.
+
+          ---
+          See [README](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor#prerequisites) for setup instructions and NDI Runtime prerequisites.
 
   build_windows:
     runs-on: windows-latest
@@ -86,3 +97,4 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: dist/NDI_Shure_Monitor_Windows.zip
+
