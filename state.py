@@ -26,14 +26,22 @@ DEFAULT_CONFIG = {
     "show_preview": True,
     "show_leds": True,
     "show_names": True,
+    "show_battery": True,
     "layout_mode": "fixed",
+    "connections": {
+        "shure": {"ip": "127.0.0.1", "port": 2202},
+        "x32": {"ip": "192.168.1.100", "port": 10023},
+        "wing": {"ip": "192.168.1.101", "port": 2223},
+        "sennheiser": {"ip": "127.0.0.1", "port": 0},
+        "presonus": {"ip": "127.0.0.1", "port": 0}
+    },
     "leds": [
         {"id": i, 
          "name": f"MIC {i+1}", 
          "enabled": True, 
          "interval": 500,
-         "shure_ip": "127.0.0.1", 
-         "shure_port": 2202,
+         "monitor_type": "shure",
+         "target": f"{i+1}",
          "use_receiver_name": True,
          "use_live_status": True
         }
@@ -63,15 +71,44 @@ class StateManager:
             try:
                 with open(CONFIG_FILE, 'r') as f:
                     saved = json.load(f)
-                # Merge top-level scalar keys
+                
+                old_leds = saved.get("leds", [])
+                if "connections" not in saved:
+                    # Find first configured shure IP in old format to populate global if upgrading
+                    for l in old_leds:
+                        if l.get("monitor_type", "shure") == "shure" and l.get("ip") and l.get("ip") != "127.0.0.1":
+                            merged["connections"]["shure"]["ip"] = l["ip"]
+                            merged["connections"]["shure"]["port"] = l.get("port", 2202)
+                            break
+                        elif l.get("shure_ip") and l.get("shure_ip") != "127.0.0.1":
+                            merged["connections"]["shure"]["ip"] = l["shure_ip"]
+                            merged["connections"]["shure"]["port"] = l.get("shure_port", 2202)
+                            break
+                            
+                # Merge top-level scalar keys and connections dict
                 for k, v in saved.items():
-                    if k != "leds":
+                    if k == "connections":
+                        for c_type, c_data in v.items():
+                            if c_type in merged["connections"]:
+                                merged["connections"][c_type].update(c_data)
+                    elif k != "leds":
                         merged[k] = v
+                        
                 # Merge LED list by id
-                saved_leds = {led["id"]: led for led in saved.get("leds", [])}
+                saved_leds = {led["id"]: led for led in old_leds}
                 for led in merged["leds"]:
                     if led["id"] in saved_leds:
-                        led.update(saved_leds[led["id"]])
+                        saved_led = saved_leds[led["id"]]
+                        if saved_led.get("monitor_type") == "shure" and "target" not in saved_led:
+                             # Default shure target is its index+1
+                             saved_led["target"] = str(led["id"] + 1)
+                        # Strip out old fields that are now global
+                        saved_led.pop("ip", None)
+                        saved_led.pop("port", None)
+                        saved_led.pop("shure_ip", None)
+                        saved_led.pop("shure_port", None)
+                        saved_led.pop("api_endpoint", None)
+                        led.update(saved_led)
             except json.JSONDecodeError:
                 print("Error decoding config.json, using defaults.")
 

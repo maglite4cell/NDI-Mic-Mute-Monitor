@@ -97,6 +97,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='icon.ico',
 )
 
 coll = COLLECT(
@@ -113,7 +114,7 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='NDI Shure Monitor.app',
-    icon=None,
+    icon='icon.icns',
     bundle_identifier='com.shure.ndimonitor',
     info_plist={
         'NSHighResolutionCapable': 'True',

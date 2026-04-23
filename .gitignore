@@ -7,3 +7,6 @@ dist/
 config.json
 3rdparty/
 app_output.txt
+
+# MkDocs build output
+site/
