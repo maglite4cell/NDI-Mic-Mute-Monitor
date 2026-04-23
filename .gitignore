@@ -5,3 +5,4 @@ dist/
 *.pyc
 .DS_Store
 config.json
+3rdparty/
