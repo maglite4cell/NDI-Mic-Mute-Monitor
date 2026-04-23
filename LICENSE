@@ -19,3 +19,21 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-Party Notices
+
+### NDI®
+
+This software uses NDI® technology.
+
+NDI® is a registered trademark of Vizrt Group.
+
+The NDI runtime libraries included in binary distributions of this software
+are provided under the NDI SDK License Agreement:
+https://ndi.video/legal/
+
+NDI® runtime libraries are Copyright © Vizrt Group. All rights reserved.
+Redistribution of the NDI runtime is permitted solely as part of an application
+that uses the NDI SDK, in accordance with the NDI SDK License Agreement.

@@ -92,4 +92,7 @@ uv run --with pyinstaller pyinstaller NDI_Shure_Monitor.spec
 - NDI output is broadcast as a transparent BGRA overlay suitable for compositing in vMix, OBS, or hardware NDI switchers.
 
 ## License
-Provided under the MIT License.
+This project is provided under the MIT License. See [LICENSE](LICENSE) for details.
+
+This software uses NDI® technology. NDI® is a registered trademark of Vizrt Group.
+NDI runtime libraries bundled in binary releases are subject to the [NDI SDK License Agreement](https://ndi.video/legal/).
