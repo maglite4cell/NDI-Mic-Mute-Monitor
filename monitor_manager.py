@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 import json
-from state import state
+from state import state, logger
 from pythonosc.dispatcher import Dispatcher
 from pythonosc.osc_server import BlockingOSCUDPServer
 from pythonosc.osc_message_builder import OscMessageBuilder
@@ -95,11 +95,13 @@ class ShureConnection(BaseConnection):
     def send_command(self, cmd):
         if self.sock and self.connected:
             try:
+                logger.debug(f"Shure {self.ip} TX: {cmd}")
                 self.sock.sendall(cmd.encode('utf-8'))
             except:
                 pass
 
     def process_data(self, raw_data):
+        logger.debug(f"Shure {self.ip} RX: {raw_data.strip()}")
         self.buffer += raw_data
         if len(self.buffer) > 8192: self.buffer = ""
         while '>' in self.buffer:
@@ -138,6 +140,7 @@ class ShureConnection(BaseConnection):
                     state.update_single_led(lid, battery=None if val == 255 else val)
                 except: pass
             elif command in ["AUDIO_TX_ON_OFF", "TX_MUTE_STATUS", "RF_ANTENNA"]:
+                if not led.get("use_live_status", True): continue
                 status = "OK"
                 if command == "TX_MUTE_STATUS" and value == "ON": status = "MUTE"
                 elif command == "AUDIO_TX_ON_OFF" and value == "OFF": status = "MUTE"
@@ -200,11 +203,13 @@ class SennheiserConnection(BaseConnection):
     def send_msg(self, obj):
         if self.sock and self.connected:
             try:
+                logger.debug(f"Sennheiser {self.ip} TX: {obj}")
                 msg = json.dumps(obj) + "\r\n"
                 self.sock.sendall(msg.encode('utf-8'))
             except: pass
 
     def process_data(self, raw_data):
+        logger.debug(f"Sennheiser {self.ip} RX: {raw_data.strip()}")
         # Sennheiser SSC is newline delimited JSON
         for line in raw_data.splitlines():
             try:
@@ -224,7 +229,7 @@ class SennheiserConnection(BaseConnection):
                 if led.get("target") != ch_str: continue
                 
                 updates = {}
-                if "mute" in ch_data:
+                if "mute" in ch_data and led.get("use_live_status", True):
                     updates["status"] = "MUTE" if ch_data["mute"] else "OK"
                 if "name" in ch_data and led.get("use_receiver_name", True):
                     updates["name"] = ch_data["name"]
@@ -259,10 +264,17 @@ class GlobalOscManager:
                 self.current_port = port
                 self.restart_server(dispatcher)
 
-            if self.server and self.current_ip != "127.0.0.1":
+            # Only ping if at least one enabled channel is actively monitoring this mixer
+            has_active_channels = any(
+                l.get("enabled", True) and l.get("monitor_type") == self.monitor_type and l.get("use_live_status", True)
+                for l in state.get_leds()
+            )
+
+            if self.server and self.current_ip != "127.0.0.1" and has_active_channels:
                 try:
                     builder = OscMessageBuilder(address="/xremote")
                     msg = builder.build()
+                    logger.debug(f"OSC {self.monitor_type} TX: /xremote to {self.current_ip}:{self.current_port}")
                     self.server.socket.sendto(msg.dgram, (self.current_ip, self.current_port))
                 except: pass
             
@@ -283,9 +295,11 @@ class GlobalOscManager:
     def osc_handler(self, address, *args):
         if not args: return
         val = args[0]
+        logger.debug(f"OSC {self.monitor_type} RX: {address} {args}")
         leds = [l for l in state.get_leds() if l.get("enabled", True) and l.get("monitor_type") == self.monitor_type]
         for led in leds:
             if led.get("target") == address:
+                if not led.get("use_live_status", True): continue
                 status = "OK"
                 if self.monitor_type == "x32": status = "OK" if val == 1 else "MUTE"
                 elif self.monitor_type == "wing": status = "MUTE" if val == 1 else "OK"

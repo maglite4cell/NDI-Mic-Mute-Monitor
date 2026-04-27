@@ -3,6 +3,8 @@ import threading
 import os
 import sys
 import platform
+import logging
+from logging.handlers import RotatingFileHandler
 
 # Determine config file location
 _script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,11 +20,21 @@ if getattr(sys, 'frozen', False):
         config_dir = os.path.expanduser("~/.config/NDI Shure Monitor")
     os.makedirs(config_dir, exist_ok=True)
     CONFIG_FILE = os.path.join(config_dir, "config.json")
+    LOG_FILE = os.path.join(config_dir, "debug.log")
 else:
     # Running from source — config lives next to this file, not the CWD
     CONFIG_FILE = os.path.join(_script_dir, "config.json")
+    LOG_FILE = os.path.join(_script_dir, "debug.log")
+
+logger = logging.getLogger("ndi_shure_monitor")
+handler = RotatingFileHandler(LOG_FILE, maxBytes=5*1024*1024, backupCount=1)
+formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 DEFAULT_CONFIG = {
+    "enable_debug_logging": False,
     "show_preview": True,
     "show_leds": True,
     "show_names": True,
@@ -117,6 +129,12 @@ class StateManager:
                 print("Error decoding config.json, using defaults.")
 
         self.config = merged
+        
+        if self.config.get("enable_debug_logging", False):
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+            
         self.save_config()
 
     def save_config(self):

@@ -14,3 +14,6 @@ site/
 # Testing
 .coverage
 .pytest_cache/
+
+# Logging
+debug.log*

@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Optional, Dict
 import uvicorn
 import threading
-from state import state
+from state import state, logger, LOG_FILE
 import os
+import logging
 
 app = FastAPI()
 
@@ -36,6 +37,7 @@ class ConfigUpdate(BaseModel):
     show_names: Optional[bool] = None
     show_battery: Optional[bool] = None
     layout_mode: Optional[str] = None
+    enable_debug_logging: Optional[bool] = None
 
 class ChannelStatusUpdate(BaseModel):
     status: Optional[str] = None
@@ -69,6 +71,12 @@ def update_config(update: ConfigUpdate):
             state.config["show_battery"] = update.show_battery
         if update.layout_mode is not None:
             state.config["layout_mode"] = update.layout_mode
+        if update.enable_debug_logging is not None:
+            state.config["enable_debug_logging"] = update.enable_debug_logging
+            if update.enable_debug_logging:
+                logger.setLevel(logging.DEBUG)
+            else:
+                logger.setLevel(logging.INFO)
         
     state.save_config()
         
@@ -86,6 +94,12 @@ def update_channel_status(id: int, update: ChannelStatusUpdate):
         state.update_single_led(id, **updates)
         
     return {"status": "ok"}
+
+@app.get("/api/logs/download")
+def download_logs():
+    if os.path.exists(LOG_FILE):
+        return FileResponse(LOG_FILE, filename="debug.log")
+    return {"status": "error", "message": "Log file not found"}
 
 # HTML Dashboard
 dashboard_html = """
@@ -373,6 +387,16 @@ dashboard_html = """
                             <option value="spaced" ${currentState.layout_mode === 'spaced' ? 'selected' : ''}>Space Active Channels Evenly</option>
                         </select>
                     </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+                        <label style="color: var(--danger);">Enable Debug Logging</label>
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <a href="/api/logs/download" target="_blank" style="color: var(--accent); font-size: 0.9em; text-decoration: none;">Download Log</a>
+                            <label class="switch">
+                                <input type="checkbox" ${currentState.enable_debug_logging ? 'checked' : ''} onchange="currentState.enable_debug_logging = this.checked">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             `;
             container.appendChild(globalSettings);
@@ -460,7 +484,8 @@ dashboard_html = """
                         show_leds: currentState.show_leds,
                         show_names: currentState.show_names,
                         show_battery: currentState.show_battery,
-                        layout_mode: currentState.layout_mode
+                        layout_mode: currentState.layout_mode,
+                        enable_debug_logging: currentState.enable_debug_logging
                     })
                 });
                 btn.innerText = "Saved!";
