@@ -19,6 +19,8 @@ class LedUpdate(BaseModel):
     interval: Optional[int] = None
     monitor_type: Optional[str] = None
     target: Optional[str] = None
+    ip: Optional[str] = None
+    port: Optional[int] = None
     use_receiver_name: Optional[bool] = None
     use_live_status: Optional[bool] = None
 
@@ -138,25 +140,14 @@ dashboard_html = """
         
         .led-id { font-size: 0.8em; opacity: 0.7; }
         
-        input[type="text"] {
+        input[type="text"], input[type="number"], select {
             background: #2c2c2c;
             border: 1px solid #333;
             color: white;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 16px; /* Preventing iOS zoom */
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        input[type="number"] {
-            background: #2c2c2c;
-            border: 1px solid #333;
-            color: white;
-            padding: 12px;
+            padding: 10px;
             border-radius: 8px;
             font-size: 16px;
-            width: 100px;
+            width: 100%;
             box-sizing: border-box;
         }
 
@@ -167,9 +158,8 @@ dashboard_html = """
             margin-top: 10px;
         }
 
-        label { font-size: 0.9em; opacity: 0.8; }
+        label { font-size: 0.9em; opacity: 0.8; display: block; margin-bottom: 5px; }
 
-        /* Custom Toggle Switch */
         .switch {
             position: relative;
             display: inline-block;
@@ -213,6 +203,7 @@ dashboard_html = """
             position: sticky;
             bottom: 20px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 100;
         }
         .btn-save:active { transform: scale(0.98); }
 
@@ -231,7 +222,6 @@ dashboard_html = """
     <script>
         let currentState = { leds: [], connections: {} };
 
-        // Escape HTML special characters to prevent XSS from receiver-supplied strings
         function escHtml(str) {
             return String(str ?? '')
                 .replace(/&/g, '&amp;')
@@ -242,7 +232,6 @@ dashboard_html = """
         }
 
         async function fetchConfig() {
-            // Fetch LED Config
             const res = await fetch('/api/config');
             const data = await res.json();
             currentState = data;
@@ -266,8 +255,19 @@ dashboard_html = """
                 </div>`;
             }
             
-            if (type === 'shure') {
-                return `<div style="margin-top: 10px;">
+            if (type === 'shure' || type === 'sennheiser') {
+                return `
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <div style="flex: 2;">
+                        <label>Receiver IP</label>
+                        <input type="text" value="${escHtml(led.ip)}" oninput="updateState(${led.id}, 'ip', this.value)" placeholder="192.168.1.XX">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Port</label>
+                        <input type="number" value="${led.port}" oninput="updateState(${led.id}, 'port', parseInt(this.value))">
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
                     <label>Receiver Channel</label>
                     <input type="text" value="${escHtml(current)}" oninput="updateState(${led.id}, 'target', this.value)" placeholder="1, 2, 3...">
                 </div>`;
@@ -282,9 +282,7 @@ dashboard_html = """
                     for(let i=1; i<=16; i++) options.push({val: `/bus/${i.toString().padStart(2,'0')}/mix/on`, label: `MixBus ${i}`});
                     for(let i=1; i<=6; i++) options.push({val: `/mtx/${i.toString().padStart(2,'0')}/mix/on`, label: `Matrix ${i}`});
                     options.push({val: '/main/st/mix/on', label: 'Main LR'});
-                    options.push({val: '/main/m/mix/on', label: 'Main M/C'});
                 } else {
-                    // WING
                     for(let i=1; i<=40; i++) options.push({val: `/ch/${i}/mute`, label: `Channel ${i}`});
                     for(let i=1; i<=8; i++) options.push({val: `/aux/${i}/mute`, label: `Aux In ${i}`});
                     for(let i=1; i<=16; i++) options.push({val: `/bus/${i}/mute`, label: `Bus ${i}`});
@@ -295,14 +293,13 @@ dashboard_html = """
                 const optsHtml = options.map(o => `<option value="${o.val}" ${current === o.val ? 'selected' : ''}>${o.label}</option>`).join('');
                 return `<div style="margin-top: 10px;">
                     <label>Monitor Target</label>
-                    <select onchange="updateState(${led.id}, 'target', this.value)" style="width: 100%; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #333; border-radius: 8px; margin-top: 5px;">
+                    <select onchange="updateState(${led.id}, 'target', this.value)">
                         <option value="">-- Select Target --</option>
                         ${optsHtml}
                     </select>
                 </div>`;
             }
             
-            // Sennheiser / Presonus fallback
             return `<div style="margin-top: 10px;">
                 <label>Target Identifier</label>
                 <input type="text" value="${escHtml(current)}" oninput="updateState(${led.id}, 'target', this.value)" placeholder="ID or Path">
@@ -319,12 +316,13 @@ dashboard_html = """
             const globalSettings = document.createElement('div');
             globalSettings.className = 'led-card';
             
-            const connTypes = ['shure', 'x32', 'wing', 'sennheiser', 'presonus'];
+            // Mixers only in global
+            const connTypes = ['x32', 'wing'];
             const connectionsHtml = connTypes.map(type => `
                 <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center;">
                     <label style="width: 80px; text-transform: capitalize;">${type}</label>
                     <input type="text" value="${currentState.connections[type]?.ip || ''}" 
-                        oninput="updateConnection('${type}', 'ip', this.value)" placeholder="IP Address" style="flex: 2; padding: 8px;">
+                        oninput="updateConnection('${type}', 'ip', this.value)" placeholder="Mixer IP" style="flex: 2; padding: 8px;">
                     <input type="number" value="${currentState.connections[type]?.port || 0}" 
                         oninput="updateConnection('${type}', 'port', parseInt(this.value))" placeholder="Port" style="flex: 1; padding: 8px; width: 60px;">
                 </div>
@@ -332,57 +330,49 @@ dashboard_html = """
 
             globalSettings.innerHTML = `
                 <div class="led-header">
-                    <span style="font-weight: bold; font-size: 1.1em;">Global Settings</span>
+                    <span style="font-weight: bold; font-size: 1.1em;">Global Mixer Connections</span>
                 </div>
                 
-                <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                    <label style="color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; display: block; margin-bottom: 10px;">Monitor Connections</label>
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px;">
                     ${connectionsHtml}
-                    
-                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;">
-                        <label style="color: #aaa; font-size: 0.8em; display: block;">Webhook API Base URL (For external control)</label>
-                        <code style="background: #000; padding: 5px; border-radius: 4px; display: block; margin-top: 5px; color: var(--success); font-size: 0.9em; word-break: break-all;">http://${currentHost}/api/channel</code>
-                    </div>
                 </div>
 
-                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <label>Show Local Preview Window</label>
-                    <label class="switch">
-                        <input type="checkbox" ${currentState.show_preview ? 'checked' : ''} 
-                            onchange="currentState.show_preview = this.checked">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <label>Show LED Indicators</label>
-                    <label class="switch">
-                        <input type="checkbox" ${currentState.show_leds !== false ? 'checked' : ''} 
-                            onchange="currentState.show_leds = this.checked">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <label>Show Channel Names</label>
-                    <label class="switch">
-                        <input type="checkbox" ${currentState.show_names !== false ? 'checked' : ''} 
-                            onchange="currentState.show_names = this.checked">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                    <label>Show Battery Level</label>
-                    <label class="switch">
-                        <input type="checkbox" ${currentState.show_battery !== false ? 'checked' : ''} 
-                            onchange="currentState.show_battery = this.checked">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div style="margin-top: 15px;">
-                    <label style="display: block; margin-bottom: 5px;">Layout Mode</label>
-                    <select onchange="currentState.layout_mode = this.value" style="width: 100%; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #333; border-radius: 8px;">
-                        <option value="fixed" ${currentState.layout_mode !== 'spaced' ? 'selected' : ''}>Fixed Slots (Leave Gaps)</option>
-                        <option value="spaced" ${currentState.layout_mode === 'spaced' ? 'selected' : ''}>Space Active Channels Evenly</option>
-                    </select>
+                <div style="margin-top: 20px; border-top: 1px solid #333; padding-top: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <label>Show Local Preview Window</label>
+                        <label class="switch">
+                            <input type="checkbox" ${currentState.show_preview ? 'checked' : ''} onchange="currentState.show_preview = this.checked">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <label>Show LED Indicators</label>
+                        <label class="switch">
+                            <input type="checkbox" ${currentState.show_leds !== false ? 'checked' : ''} onchange="currentState.show_leds = this.checked">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <label>Show Channel Names</label>
+                        <label class="switch">
+                            <input type="checkbox" ${currentState.show_names !== false ? 'checked' : ''} onchange="currentState.show_names = this.checked">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                        <label>Show Battery Level</label>
+                        <label class="switch">
+                            <input type="checkbox" ${currentState.show_battery !== false ? 'checked' : ''} onchange="currentState.show_battery = this.checked">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div>
+                        <label>Layout Mode</label>
+                        <select onchange="currentState.layout_mode = this.value">
+                            <option value="fixed" ${currentState.layout_mode !== 'spaced' ? 'selected' : ''}>Fixed Slots (Leave Gaps)</option>
+                            <option value="spaced" ${currentState.layout_mode === 'spaced' ? 'selected' : ''}>Space Active Channels Evenly</option>
+                        </select>
+                    </div>
                 </div>
             `;
             container.appendChild(globalSettings);
@@ -395,8 +385,7 @@ dashboard_html = """
                     <div class="led-header">
                         <span class="led-id">Channel ${led.id + 1}</span>
                         <label class="switch">
-                            <input type="checkbox" ${led.enabled ? 'checked' : ''} 
-                                onchange="updateState(${led.id}, 'enabled', this.checked)">
+                            <input type="checkbox" ${led.enabled ? 'checked' : ''} onchange="updateState(${led.id}, 'enabled', this.checked)">
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -404,31 +393,27 @@ dashboard_html = """
                     <div style="display: flex; gap: 10px; margin-top: 10px;">
                          <div style="flex: 2;">
                             <label>Display Name</label>
-                            <input type="text" value="${escHtml(led.name)}" 
-                                oninput="updateState(${led.id}, 'name', this.value)">
+                            <input type="text" value="${escHtml(led.name)}" oninput="updateState(${led.id}, 'name', this.value)">
                          </div>
                          <div style="flex: 1; min-width: 80px;">
                             <label>Sync Name</label>
                             <label class="switch" style="transform: scale(0.8); margin-top: 5px;">
-                                <input type="checkbox" ${led.use_receiver_name ? 'checked' : ''} 
-                                    onchange="updateState(${led.id}, 'use_receiver_name', this.checked)">
+                                <input type="checkbox" ${led.use_receiver_name ? 'checked' : ''} onchange="updateState(${led.id}, 'use_receiver_name', this.checked)">
                                 <span class="slider"></span>
                             </label>
                         </div>
                     </div>
 
-                    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;">
-                        <label style="color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; display: block; margin-bottom: 5px;">Monitor Configuration</label>
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px;">
+                        <label style="color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; display: block; margin-bottom: 10px;">Monitor Configuration</label>
                         
                         <div style="margin-bottom: 10px;">
-                            <label style="display: block; margin-bottom: 5px;">Monitor Type</label>
-                            <select onchange="updateState(${led.id}, 'monitor_type', this.value); render();" 
-                                style="width: 100%; padding: 10px; background: #2c2c2c; color: white; border: 1px solid #333; border-radius: 8px;">
+                            <label>Monitor Type</label>
+                            <select onchange="updateState(${led.id}, 'monitor_type', this.value); render();">
                                 <option value="shure" ${led.monitor_type === 'shure' ? 'selected' : ''}>Shure</option>
                                 <option value="sennheiser" ${led.monitor_type === 'sennheiser' ? 'selected' : ''}>Sennheiser</option>
                                 <option value="x32" ${led.monitor_type === 'x32' ? 'selected' : ''}>X32 / M32</option>
                                 <option value="wing" ${led.monitor_type === 'wing' ? 'selected' : ''}>WING</option>
-                                <option value="presonus" ${led.monitor_type === 'presonus' ? 'selected' : ''}>Presonus Studio Live</option>
                                 <option value="api" ${led.monitor_type === 'api' ? 'selected' : ''}>API Endpoint</option>
                             </select>
                         </div>
@@ -438,16 +423,13 @@ dashboard_html = """
 
                     <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
                         <div>
-                            <label style="display: block;">Flash Interval (ms)</label>
-                            <input type="number" value="${led.interval}" 
-                                oninput="updateState(${led.id}, 'interval', parseInt(this.value))"
-                                style="width: 100px;">
+                            <label>Flash Interval (ms)</label>
+                            <input type="number" value="${led.interval}" oninput="updateState(${led.id}, 'interval', parseInt(this.value))" style="width: 100px;">
                         </div>
                         <div style="text-align: right;">
-                             <label style="display: block;">Use Live Status</label>
+                             <label>Use Live Status</label>
                              <label class="switch" style="margin-top: 5px;">
-                                <input type="checkbox" ${led.use_live_status ? 'checked' : ''} 
-                                    onchange="updateState(${led.id}, 'use_live_status', this.checked)">
+                                <input type="checkbox" ${led.use_live_status ? 'checked' : ''} onchange="updateState(${led.id}, 'use_live_status', this.checked)">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -459,9 +441,7 @@ dashboard_html = """
 
         function updateState(id, key, value) {
             const led = currentState.leds.find(l => l.id === id);
-            if (led) {
-                led[key] = value;
-            }
+            if (led) { led[key] = value; }
         }
 
         async function saveConfig() {
@@ -491,7 +471,6 @@ dashboard_html = """
             }
         }
 
-        // Initial Load
         fetchConfig();
     </script>
 </body>
@@ -507,3 +486,4 @@ def run_server():
 
 if __name__ == "__main__":
     run_server()
+
