@@ -127,22 +127,25 @@ class NDIWorker:
 
                 # Status / Logic
                 use_live = led.get("use_live_status", True)
+                if led.get("monitor_type") == "api":
+                    use_live = True # Always respect the `status` field for API endpoints
+
                 status = led.get("status", "MUTE") # Default to MUTE/Red if no signal
                 interval = led.get("interval", 500)
                 
                 color = (100, 100, 100, 255) # Gray default
 
-                if use_live:
-                    # LIVE MODE: Green if OK/ON, Red if MUTE/OFF
+                if not use_live or status == "FLASH":
+                    # BLINK MODE
+                    if interval <= 0: interval = 500
+                    is_on = (current_time_ms // interval) % 2 == 0
+                    color = (0, 255, 0, 255) if is_on else (255, 0, 0, 255)
+                else:
+                    # SOLID MODE: Green if OK/ON, Red if MUTE/OFF
                     if status == "OK" or status == "ON":
                         color = (0, 255, 0, 255) # Green
                     else:
                         color = (255, 0, 0, 255) # Red
-                else:
-                    # MANUAL BLINK MODE
-                    if interval <= 0: interval = 500
-                    is_on = (current_time_ms // interval) % 2 == 0
-                    color = (0, 255, 0, 255) if is_on else (255, 0, 0, 255)
                 
                 # Draw LED (Circle) if globally enabled
                 if show_leds:

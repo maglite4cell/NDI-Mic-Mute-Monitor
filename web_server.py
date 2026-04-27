@@ -266,6 +266,12 @@ dashboard_html = """
                 return `<div style="margin-top: 10px;">
                     <label style="color: #aaa; font-size: 0.8em;">Endpoint</label>
                     <code style="background: #000; padding: 8px; border-radius: 4px; display: block; margin-top: 5px; color: var(--success);">POST /api/channel/${led.id}/status</code>
+                    <div style="font-size: 0.85em; color: #888; margin-top: 12px; line-height: 1.5; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+                        <strong>JSON Payload Options:</strong><br>
+                        <span style="color: #aaa;"><code>{"status": "OK"}</code> &rarr; Solid Green</span><br>
+                        <span style="color: #aaa;"><code>{"status": "MUTE"}</code> &rarr; Solid Red</span><br>
+                        <span style="color: #aaa;"><code>{"status": "FLASH"}</code> &rarr; Blinks at Flash Interval</span>
+                    </div>
                 </div>`;
             }
             
@@ -448,15 +454,17 @@ dashboard_html = """
                     </div>
 
                     <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
+                        ${!led.use_live_status || led.monitor_type === 'api' ? `
                         <div>
                             <label>Flash Interval (ms)</label>
                             <input type="number" value="${led.interval}" oninput="updateState(${led.id}, 'interval', parseInt(this.value))" style="width: 100px;">
                         </div>
+                        ` : '<div></div>'}
                         ${led.monitor_type !== 'api' ? `
                         <div style="text-align: right;">
                              <label>Use Live Status</label>
                              <label class="switch" style="margin-top: 5px;">
-                                <input type="checkbox" ${led.use_live_status ? 'checked' : ''} onchange="updateState(${led.id}, 'use_live_status', this.checked)">
+                                <input type="checkbox" ${led.use_live_status ? 'checked' : ''} onchange="updateState(${led.id}, 'use_live_status', this.checked); render();">
                                 <span class="slider"></span>
                             </label>
                         </div>
