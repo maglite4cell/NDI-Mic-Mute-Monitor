@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -47,7 +48,14 @@ jobs:
         cd dist
         zip -r "NDI_Shure_Monitor_macOS.zip" "NDI Shure Monitor.app"
 
+    - name: Upload Workflow Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NDI_Shure_Monitor_macOS
+        path: dist/NDI_Shure_Monitor_macOS.zip
+
     - name: Upload Release Asset
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
         files: dist/NDI_Shure_Monitor_macOS.zip
@@ -109,7 +117,14 @@ jobs:
       run: |
         Compress-Archive -Path "dist\NDI Shure Monitor\*" -DestinationPath "dist\NDI_Shure_Monitor_Windows.zip"
 
+    - name: Upload Workflow Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: NDI_Shure_Monitor_Windows
+        path: dist/NDI_Shure_Monitor_Windows.zip
+
     - name: Upload Release Asset
+      if: startsWith(github.ref, 'refs/tags/')
       uses: softprops/action-gh-release@v2
       with:
         files: dist/NDI_Shure_Monitor_Windows.zip
