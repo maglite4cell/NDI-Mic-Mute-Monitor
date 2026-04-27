@@ -419,6 +419,7 @@ dashboard_html = """
                             <label>Display Name</label>
                             <input type="text" value="${escHtml(led.name)}" oninput="updateState(${led.id}, 'name', this.value)">
                          </div>
+                         ${['shure', 'sennheiser'].includes(led.monitor_type) ? `
                          <div style="flex: 1; min-width: 80px;">
                             <label>Sync Name</label>
                             <label class="switch" style="transform: scale(0.8); margin-top: 5px;">
@@ -426,6 +427,7 @@ dashboard_html = """
                                 <span class="slider"></span>
                             </label>
                         </div>
+                         ` : ''}
                     </div>
 
                     <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-top: 10px;">
