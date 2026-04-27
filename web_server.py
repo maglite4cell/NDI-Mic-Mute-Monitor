@@ -452,6 +452,7 @@ dashboard_html = """
                             <label>Flash Interval (ms)</label>
                             <input type="number" value="${led.interval}" oninput="updateState(${led.id}, 'interval', parseInt(this.value))" style="width: 100px;">
                         </div>
+                        ${led.monitor_type !== 'api' ? `
                         <div style="text-align: right;">
                              <label>Use Live Status</label>
                              <label class="switch" style="margin-top: 5px;">
@@ -459,6 +460,7 @@ dashboard_html = """
                                 <span class="slider"></span>
                             </label>
                         </div>
+                        ` : ''}
                     </div>
                 `;
                 container.appendChild(card);
