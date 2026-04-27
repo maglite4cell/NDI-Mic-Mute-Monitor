@@ -26,11 +26,28 @@ Running a live broadcast without a fast, reliable mic status overlay is a liabil
 Download the latest `.app` (macOS) or `.exe` (Windows) from the [GitHub Releases](https://github.com/maglite4cell/NDI-Mic-Mute-Monitor/releases) page.
 
 !!! warning "macOS Gatekeeper"
-    Because this app is not notarized, macOS may block it. Run this once in Terminal:
+    Because this app is not notarized, macOS may show an "unidentified developer" error. To fix this, open your Terminal and run the appropriate command based on where you saved the app:
+    
+    **If it's in your Applications folder:**
     ```bash
     xattr -cr "/Applications/NDI Shure Monitor.app"
     ```
-    Then open normally.
+    
+    **If it's in your Downloads folder:**
+    ```bash
+    xattr -cr "~/Downloads/NDI Shure Monitor.app"
+    ```
+    
+    **If it's saved somewhere else:**
+    ```bash
+    xattr -cr "/path/to/where/you/saved/NDI Shure Monitor.app"
+    ```
+    
+    *(Tip: You can type `xattr -cr ` with a space at the end, and then drag and drop the app from Finder directly into the Terminal window to automatically insert the correct path).*
+
+    Then open the app normally. You only need to do this once.
+    
+    If you still see **"unidentified developer"**, right-click the app → **Open** → click **Open** in the dialog.
 
 ### 2. Install the NDI Runtime
 
